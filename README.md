@@ -86,6 +86,38 @@ if err == nil {
     fmt.Println(result)
 }
 ```
+## CLI Usage
+
+### whois query for domain
+
+```shell
+whois likexian.com
+```
+
+### whois query for IPv6
+
+```shell
+whois 2001:dc7::1
+```
+
+### whois query for IPv4
+
+```shell
+whois 1.1.1.1
+```
+
+### whois query for ASN
+
+```shell
+# or whois as60614
+whois 60614
+```
+
+### whois query output as json
+
+```shell
+whois -j likexian.com
+```
 
 ## Whois information parsing
 
@@ -93,12 +125,7 @@ Please refer to [whois-parser](https://github.com/likexian/whois-parser)
 
 ## License
 
-Copyright 2014-2024 [Li Kexian](https://www.likexian.com/)
+- Copyright 2014-2024 [Li Kexian](https://www.likexian.com/)
+- Copyright 2025 Derrick Wippler
 
 Licensed under the Apache License 2.0
-
-## Donation
-
-If this project is helpful, please share it with friends.
-
-If you want to thank me, you can [give me a cup of coffee](https://www.likexian.com/donate/).

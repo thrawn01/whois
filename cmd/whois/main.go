@@ -1,5 +1,6 @@
 /*
  * Copyright 2014-2024 Li Kexian
+ * Copyright 2025 Derrick Wippler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +26,8 @@ import (
 	"os"
 
 	"github.com/likexian/gokit/xjson"
-	"github.com/thrawn01/whois"
 	whoisparser "github.com/likexian/whois-parser"
+	"github.com/thrawn01/whois"
 	"golang.org/x/net/proxy"
 )
 
