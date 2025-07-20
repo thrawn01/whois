@@ -20,23 +20,17 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/likexian/gokit/xjson"
-	"github.com/likexian/gokit/xversion"
-	"github.com/likexian/whois"
+	"github.com/thrawn01/whois"
 	whoisparser "github.com/likexian/whois-parser"
 	"golang.org/x/net/proxy"
 )
 
 func main() {
-	updateMessage := make(chan string)
-	go checkUpdate(updateMessage, "v"+whois.Version())
-
 	server := flag.String("h", "", "specify the whois server")
 	outJSON := flag.Bool("j", false, "output format as json")
 	version := flag.Bool("v", false, "show the whois version")
@@ -62,8 +56,15 @@ options:
 		os.Exit(1)
 	}
 
-	text, err := whois.NewClient().
-		SetDialer(proxy.FromEnvironment()).Whois(flag.Args()[0], *server)
+	dialer := proxy.FromEnvironment()
+	var text string
+	var err error
+	if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+		text, err = whois.NewClient().
+			SetDialer(contextDialer).Whois(flag.Args()[0], *server)
+	} else {
+		text, err = whois.NewClient().Whois(flag.Args()[0], *server)
+	}
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -85,44 +86,6 @@ options:
 	}
 
 	fmt.Println(text)
-
-	message := <-updateMessage
-	if message != "" {
-		fmt.Println(message)
-	}
-
 	os.Exit(0)
 }
 
-// checkUpdate checks version update
-func checkUpdate(updateMessage chan string, version string) {
-	checkPoint := "https://release.likexian.com/whois/update"
-	cacheFile := fmt.Sprintf("%s/whois.update.cache", os.TempDir())
-
-	req := &xversion.CheckUpdateRequest{
-		Product:       "whois",
-		Current:       version,
-		CacheFile:     cacheFile,
-		CacheDuration: 24 * time.Hour,
-		CheckPoint:    checkPoint,
-	}
-
-	ctx := context.Background()
-	rsp, err := req.Run(ctx)
-	if err == nil && rsp.Outdated {
-		if version != rsp.Current {
-			_ = os.Remove(cacheFile)
-		} else {
-			emergency := "NOTICE"
-			if rsp.Emergency {
-				emergency = "WARNING"
-			}
-			message := fmt.Sprintf("%% %s: Your version of whois is outdate, the latest is %s.\n",
-				emergency, rsp.Latest)
-			message += fmt.Sprintf("%% You can update it by downloading from %s", rsp.ProductURL)
-			updateMessage <- message
-		}
-	}
-
-	updateMessage <- ""
-}

@@ -1,12 +1,18 @@
 # Whois
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![GoDoc](https://pkg.go.dev/badge/github.com/likexian/whois.svg)](https://pkg.go.dev/github.com/likexian/whois)
-[![Go Report Card](https://goreportcard.com/badge/github.com/likexian/whois)](https://goreportcard.com/report/github.com/likexian/whois)
-[![Build Status](https://github.com/likexian/whois/actions/workflows/gotest.yaml/badge.svg)](https://github.com/likexian/whois/actions/workflows/gotest.yaml)
-[![Code Cover](https://release.likexian.com/whois/coverage.svg)](https://github.com/likexian/whois/actions/workflows/gotest.yaml)
+[![GoDoc](https://pkg.go.dev/badge/github.com/thrawn01/whois.svg)](https://pkg.go.dev/github.com/thrawn01/whois)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thrawn01/whois)](https://goreportcard.com/report/github.com/thrawn01/whois)
+[![Build Status](https://github.com/thrawn01/whois/actions/workflows/gotest.yaml/badge.svg)](https://github.com/thrawn01/whois/actions/workflows/gotest.yaml)
 
 Whois is a simple Go module for domain and ip whois information query.
+
+> **Note**: This is a fork of [likexian/whois](https://github.com/likexian/whois) with the following improvements:
+> - Applied all unmerged pull requests from the original repository
+> - Removed telemetry/update checking that reports usage to external servers
+> - Added context support for all queries (PR #54)
+> - Fixed unreachable referral server handling (PR #58)
+> - Updated dependencies (PR #57)
 
 ## Overview
 
@@ -18,21 +24,29 @@ Or you can do development by using this golang module as below.
 
 ## Installation
 
+### As a library
+
 ```shell
-go get -u github.com/likexian/whois
+go get -u github.com/thrawn01/whois
+```
+
+### As a command-line tool
+
+```shell
+go install github.com/thrawn01/whois/cmd/whois@latest
 ```
 
 ## Importing
 
 ```go
 import (
-    "github.com/likexian/whois"
+    "github.com/thrawn01/whois"
 )
 ```
 
 ## Documentation
 
-Visit the docs on [GoDoc](https://pkg.go.dev/github.com/likexian/whois)
+Visit the docs on [GoDoc](https://pkg.go.dev/github.com/thrawn01/whois)
 
 ## Example
 

@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/likexian/gokit/assert"
-	"golang.org/x/net/proxy"
 )
 
 func TestVersion(t *testing.T) {
