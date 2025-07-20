@@ -123,6 +123,99 @@ whois -j likexian.com
 
 Please refer to [whois-parser](https://github.com/likexian/whois-parser)
 
+## MCP Server Integration
+
+This package includes an MCP (Model Context Protocol) server that allows Claude Code and other MCP-compatible clients to perform whois queries.
+
+### Installation
+
+You can run the MCP server directly using Go:
+
+```shell
+go run github.com/thrawn01/whois/cmd/mcp-whois@latest
+```
+
+Or install it locally:
+
+```shell
+go install github.com/thrawn01/whois/cmd/mcp-whois@latest
+```
+
+### Configuration for Claude Code
+
+Add the following to your Claude Code configuration:
+
+```json
+{
+  "mcpServers": {
+    "whois": {
+      "command": "go",
+      "args": ["run", "github.com/thrawn01/whois/cmd/mcp-whois@latest"]
+    }
+  }
+}
+```
+
+Or if you've installed it locally:
+
+```json
+{
+  "mcpServers": {
+    "whois": {
+      "command": "mcp-whois"
+    }
+  }
+}
+```
+
+### Available Tools
+
+#### whois_lookup
+Performs whois lookups for domains, IP addresses, and ASNs.
+
+**Parameters:**
+- `query` (required): Domain, IP address, or ASN to lookup
+- `server` (optional): Specific whois server to use
+- `timeout` (optional): Query timeout in seconds (default: 30)
+- `disable_referral` (optional): Disable referral server queries
+- `parse_json` (optional): Return parsed JSON format instead of raw whois data
+
+**Example usage in Claude:**
+```
+Please lookup whois information for example.com
+```
+
+### Available Resources
+
+The MCP server also provides resource URIs in the format `whois://[query]` for direct access to whois data.
+
+**Example:**
+```
+Access the resource whois://example.com
+```
+
+### Testing the MCP Server
+
+The MCP server includes comprehensive tests. To run them:
+
+```shell
+# Run all tests
+go test ./cmd/mcp-whois
+
+# Run tests with verbose output
+go test -v ./cmd/mcp-whois
+
+# Run benchmarks
+go test -bench=. ./cmd/mcp-whois
+```
+
+The test suite includes:
+- Unit tests for the whois_lookup tool
+- Integration tests with mock whois servers
+- Error handling and timeout tests  
+- JSON parsing validation tests
+- Parameter validation tests
+
 ## License
 
 - Copyright 2014-2024 [Li Kexian](https://www.likexian.com/)
