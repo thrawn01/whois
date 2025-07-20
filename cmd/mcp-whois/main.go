@@ -25,9 +25,9 @@ import (
 	"log"
 	"time"
 
+	whoisparser "github.com/likexian/whois-parser"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/thrawn01/whois"
-	whoisparser "github.com/likexian/whois-parser"
 )
 
 // WhoisLookupParams defines the parameters for whois lookup tool
@@ -59,7 +59,7 @@ func main() {
 }
 
 // handleWhoisLookup handles the whois_lookup tool requests
-func handleWhoisLookup(ctx context.Context, cc *mcp.ServerSession, params *mcp.CallToolParamsFor[WhoisLookupParams]) (*mcp.CallToolResultFor[any], error) {
+func handleWhoisLookup(_ context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[WhoisLookupParams]) (*mcp.CallToolResultFor[any], error) {
 	args := params.Arguments
 
 	// Create whois client

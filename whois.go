@@ -66,21 +66,6 @@ type hasTimeout struct {
 	Dialer
 }
 
-// Version returns package version
-func Version() string {
-	return "1.15.6"
-}
-
-// Author returns package author
-func Author() string {
-	return "[Li Kexian](https://www.likexian.com/)"
-}
-
-// License returns package license
-func License() string {
-	return "Licensed under the Apache License 2.0"
-}
-
 // Whois do the whois query and returns whois information
 func Whois(domain string, servers ...string) (result string, err error) {
 	return DefaultClient.Whois(domain, servers...)
@@ -197,6 +182,14 @@ func (c *Client) WhoisContext(ctx context.Context, domain string, servers ...str
 		return
 	}
 
+	// Test connection to referral server before attempting query
+	testConn, connErr := net.DialTimeout("tcp", net.JoinHostPort(refServer, refPort), 5*time.Second)
+	if connErr != nil {
+		// Skip unreachable referral server
+		return
+	}
+	_ = testConn.Close()
+
 	data, err := c.rawQuery(ctx, domain, refServer, refPort)
 	if err == nil {
 		if c.disableReferralChain {
@@ -236,7 +229,7 @@ func (c *Client) rawQuery(ctx context.Context, domain, server, port string) (str
 		return "", fmt.Errorf("whois: connect to whois server failed: %w", err)
 	}
 
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	elapsed := time.Since(start)
 
 	_ = conn.SetWriteDeadline(time.Now().Add(c.timeout - elapsed))
@@ -324,12 +317,7 @@ func getServer(data string) (string, string) {
 					port = matches[1]
 				}
 			}
-			// basic connection test
-			conn, err := net.Dial("tcp", net.JoinHostPort(server, port))
-			if err == nil {
-				defer conn.Close()
-				return server, port
-			}
+			return server, port
 		}
 	}
 

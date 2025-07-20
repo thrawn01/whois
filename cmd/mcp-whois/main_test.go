@@ -36,7 +36,7 @@ func TestHandleWhoisLookup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create mock server: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	address := listener.Addr().(*net.TCPAddr)
 	mockServer := fmt.Sprintf("127.0.0.1:%d", address.Port)
@@ -49,17 +49,17 @@ func TestHandleWhoisLookup(t *testing.T) {
 				return
 			}
 			go func(c net.Conn) {
-				defer c.Close()
-				
+				defer func() { _ = c.Close() }()
+
 				// Read the query
 				buffer := make([]byte, 1024)
 				n, err := c.Read(buffer)
 				if err != nil {
 					return
 				}
-				
+
 				query := strings.TrimSpace(string(buffer[:n]))
-				
+
 				// Handle different query types
 				var response string
 				if query == "" {
@@ -78,8 +78,8 @@ Registry Expiry Date: 2025-01-01T00:00:00Z
 Registrar: Test Registrar
 `, strings.ToUpper(query))
 				}
-				
-				c.Write([]byte(response))
+
+				_, _ = c.Write([]byte(response))
 			}(conn)
 		}
 	}()
@@ -156,7 +156,7 @@ Registrar: Test Registrar
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			session := &mcp.ServerSession{}
-			
+
 			params := &mcp.CallToolParamsFor[WhoisLookupParams]{
 				Arguments: tt.params,
 			}
@@ -220,7 +220,7 @@ func TestHandleWhoisLookupWithMockServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create mock server: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	// Get the port number
 	address := listener.Addr().(*net.TCPAddr)
@@ -234,17 +234,17 @@ func TestHandleWhoisLookupWithMockServer(t *testing.T) {
 				return
 			}
 			go func(c net.Conn) {
-				defer c.Close()
-				
+				defer func() { _ = c.Close() }()
+
 				// Read the query
 				buffer := make([]byte, 1024)
 				n, err := c.Read(buffer)
 				if err != nil {
 					return
 				}
-				
+
 				query := strings.TrimSpace(string(buffer[:n]))
-				
+
 				// Send mock response
 				mockResponse := fmt.Sprintf(`Domain Name: %s
 Registry Domain ID: 123456
@@ -252,8 +252,8 @@ Registrar WHOIS Server: whois.example.com
 Creation Date: 2024-01-01T00:00:00Z
 Registry Expiry Date: 2025-01-01T00:00:00Z
 `, strings.TrimSpace(query))
-				
-				c.Write([]byte(mockResponse))
+
+				_, _ = c.Write([]byte(mockResponse))
 			}(conn)
 		}
 	}()
@@ -261,7 +261,7 @@ Registry Expiry Date: 2025-01-01T00:00:00Z
 	// Test with mock server
 	ctx := context.Background()
 	session := &mcp.ServerSession{}
-	
+
 	params := &mcp.CallToolParamsFor[WhoisLookupParams]{
 		Arguments: WhoisLookupParams{
 			Query:  "test.example.com",
@@ -297,7 +297,7 @@ func TestHandleWhoisLookupTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create mock server: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	address := listener.Addr().(*net.TCPAddr)
 	port := fmt.Sprintf("%d", address.Port)
@@ -312,14 +312,14 @@ func TestHandleWhoisLookupTimeout(t *testing.T) {
 			// Don't close connection, let it timeout
 			go func(c net.Conn) {
 				time.Sleep(5 * time.Second)
-				c.Close()
+				_ = c.Close()
 			}(conn)
 		}
 	}()
 
 	ctx := context.Background()
 	session := &mcp.ServerSession{}
-	
+
 	params := &mcp.CallToolParamsFor[WhoisLookupParams]{
 		Arguments: WhoisLookupParams{
 			Query:   "timeout.test.com",
@@ -426,9 +426,10 @@ func TestWhoisLookupParamsValidation(t *testing.T) {
 				t.Errorf("expected non-empty query for valid case")
 			}
 
+			// For our current test cases, invalid means empty query
+			// This might need adjustment if we add more validation rules
 			if !tt.valid && unmarshaled.Query != "" {
-				// For our current test cases, invalid means empty query
-				// This might need adjustment if we add more validation rules
+				t.Logf("Note: invalid test case with non-empty query: %s", unmarshaled.Query)
 			}
 		})
 	}
@@ -440,7 +441,7 @@ func TestHandleWhoisLookupJSONParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create mock server: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	address := listener.Addr().(*net.TCPAddr)
 	port := fmt.Sprintf("%d", address.Port)
@@ -453,15 +454,15 @@ func TestHandleWhoisLookupJSONParsing(t *testing.T) {
 				return
 			}
 			go func(c net.Conn) {
-				defer c.Close()
-				
+				defer func() { _ = c.Close() }()
+
 				// Read the query first
 				buffer := make([]byte, 1024)
 				_, err := c.Read(buffer)
 				if err != nil {
 					return
 				}
-				
+
 				// Send a realistic whois response that should be parseable
 				mockResponse := `Domain Name: EXAMPLE.COM
 Registry Domain ID: 2336799_DOMAIN_COM-VRSN
@@ -484,7 +485,7 @@ DNSSEC DS Data: 31589 8 1 3490A6806D47F17A34C29E2CE80E8A999FFBE4BE
 DNSSEC DS Data: 31589 8 2 CDE0D742D6998AA554A92D890F8184C698CFAC8A26FA59875A990C03E576343C
 URL of the ICANN Whois Inaccuracy Complaint Form: https://www.icann.org/wicf/
 `
-				c.Write([]byte(mockResponse))
+				_, _ = c.Write([]byte(mockResponse))
 			}(conn)
 		}
 	}()
@@ -492,7 +493,7 @@ URL of the ICANN Whois Inaccuracy Complaint Form: https://www.icann.org/wicf/
 	// Test JSON parsing
 	ctx := context.Background()
 	session := &mcp.ServerSession{}
-	
+
 	params := &mcp.CallToolParamsFor[WhoisLookupParams]{
 		Arguments: WhoisLookupParams{
 			Query:     "example.com",
@@ -532,7 +533,7 @@ URL of the ICANN Whois Inaccuracy Complaint Form: https://www.icann.org/wicf/
 			t.Errorf("expected parsed JSON to be an object")
 			return
 		}
-		
+
 		// Check for common whois fields that should be present
 		if _, exists := parsedMap["domain"]; !exists {
 			t.Errorf("expected parsed JSON to contain domain field")
@@ -544,7 +545,7 @@ URL of the ICANN Whois Inaccuracy Complaint Form: https://www.icann.org/wicf/
 func BenchmarkHandleWhoisLookup(b *testing.B) {
 	ctx := context.Background()
 	session := &mcp.ServerSession{}
-	
+
 	params := &mcp.CallToolParamsFor[WhoisLookupParams]{
 		Arguments: WhoisLookupParams{
 			Query: "example.com",

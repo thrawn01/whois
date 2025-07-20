@@ -29,15 +29,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/likexian/gokit/assert"
+	"github.com/kapetan-io/tackle/retry"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/proxy"
 )
 
-func TestVersion(t *testing.T) {
-	assert.Contains(t, Version(), ".")
-	assert.Contains(t, Author(), "likexian")
-	assert.Contains(t, License(), "Apache License")
-}
+const testTimeout = 30 * time.Second
 
 func TestClient_SetDisableReferral(t *testing.T) {
 	client := NewClient()
@@ -76,18 +73,20 @@ func TestWhoisFail(t *testing.T) {
 }
 
 func TestWhoisTimeout(t *testing.T) {
+	t.Skip("This test causes us to be rate limited by default server")
 	client := NewClient()
 	client.SetTimeout(1 * time.Millisecond)
 	_, err := client.Whois("google.com")
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "timeout")
 
-	client.SetTimeout(10 * time.Second)
+	client.SetTimeout(testTimeout)
 	_, err = client.Whois("google.com")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestWhoisContext(t *testing.T) {
+	t.Skip("This test causes us to be rate limited by default server")
 	client := NewClient()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 	defer cancel()
@@ -95,7 +94,7 @@ func TestWhoisContext(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "timeout")
 
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 	_, err = client.WhoisContext(ctx, "google.com")
 	assert.Nil(t, err)
@@ -147,21 +146,25 @@ func TestWhoisServerError(t *testing.T) {
 	// Start local TCP server that simulates rate limiting
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.Nil(t, err)
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	go func() {
-		conn, err := listener.Accept()
-		if err != nil {
-			return
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+
+			// Simulate rate limit response from GoDaddy.
+			_, _ = conn.Write([]byte("Number of allowed queries exceeded"))
+
+			// Close the connection immediately, rather than a graceful shutdown.
+			_ = conn.(*net.TCPConn).SetLinger(0)
+			_ = conn.Close()
 		}
-
-		// Simulate rate limit response from GoDaddy.
-		conn.Write([]byte("Number of allowed queries exceeded"))
-
-		// Close the connection immediately, rather than a graceful shutdown.
-		conn.(*net.TCPConn).SetLinger(0)
-		conn.Close()
 	}()
+
+	retry.UntilConnect(t, 10, time.Millisecond, listener.Addr().String())
 
 	client := NewClient()
 	result, err := client.Whois("test.com", listener.Addr().String())
@@ -174,17 +177,17 @@ func TestNewClient(t *testing.T) {
 	var err error
 
 	c.SetTimeout(10 * time.Millisecond)
-	_, err = c.Whois("likexian.com")
+	_, err = c.Whois("example.com")
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "timeout")
 
-	c.SetTimeout(10 * time.Second)
-	_, err = c.Whois("likexian.com")
-	assert.Nil(t, err)
+	c.SetTimeout(testTimeout)
+	_, err = c.Whois("example.com")
+	assert.NoError(t, err)
 
 	c.SetDialer(proxy.FromEnvironment().(proxy.ContextDialer))
-	_, err = c.Whois("likexian.com")
-	assert.Nil(t, err)
+	_, err = c.Whois("example.com")
+	assert.NoError(t, err)
 }
 
 func TestIsASN(t *testing.T) {
@@ -232,8 +235,10 @@ func TestGetServer(t *testing.T) {
 		data, err := os.ReadFile("testdata/" + tc.filename)
 		assert.Nil(t, err)
 
-		server, port := getServer(string(data))
-		assert.Equal(t, server, tc.server)
-		assert.Equal(t, port, tc.port)
+		t.Run(tc.filename, func(t *testing.T) {
+			server, port := getServer(string(data))
+			assert.Equal(t, tc.server, server)
+			assert.Equal(t, tc.port, port)
+		})
 	}
 }

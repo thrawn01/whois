@@ -34,14 +34,7 @@ import (
 func main() {
 	server := flag.String("h", "", "specify the whois server")
 	outJSON := flag.Bool("j", false, "output format as json")
-	version := flag.Bool("v", false, "show the whois version")
 	flag.Parse()
-
-	if *version {
-		fmt.Println("whois version " + whois.Version())
-		fmt.Println(whois.Author())
-		os.Exit(0)
-	}
 
 	if len(flag.Args()) == 0 {
 		fmt.Printf("Usage:\n\t%s [-j] [-h server] domain\n", os.Args[0])
@@ -89,4 +82,3 @@ options:
 	fmt.Println(text)
 	os.Exit(0)
 }
-
