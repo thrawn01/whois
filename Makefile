@@ -26,3 +26,7 @@ ci: tidy lint test
 .PHONY: vet
 vet:
 	go vet ./...
+
+.PHONY: mcp
+mcp:
+	go build -o mcp-whois ./cmd/mcp-whois
